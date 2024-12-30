@@ -52,6 +52,15 @@ async function checkMasApp(appId) {
   }
 }
 
+async function checkAppStoreLogin() {
+  try {
+    const { stdout } = await execa('mas', ['account']);
+    return stdout.length > 0 && !stdout.includes('Not signed in');
+  } catch {
+    return false;
+  }
+}
+
 const apps = {
   brew: {
     name: 'Homebrew',
@@ -76,19 +85,43 @@ const apps = {
     category: CATEGORIES.DEVELOPMENT,
     check: async () => {
       try {
-        await execa('brew', ['list', 'mas']);
-        return true;
+        // Check if mas is installed AND user is logged in
+        const masInstalled = await execa('brew', ['list', 'mas'])
+          .then(() => true)
+          .catch(() => false);
+        
+        if (!masInstalled) return false;
+        
+        // Check App Store login
+        const isLoggedIn = await checkAppStoreLogin();
+        return isLoggedIn;
       } catch {
         return false;
       }
     },
     install: async () => {
       await execa('brew', ['install', 'mas']);
+      
       // Check if user is signed into Mac App Store
-      try {
-        await execa('mas', ['account']);
-      } catch {
-        throw new Error('Please sign into the Mac App Store first');
+      const isLoggedIn = await checkAppStoreLogin();
+      if (!isLoggedIn) {
+        console.log(chalk.yellow('\nIMPORTANT: You need to sign into the Mac App Store first.'));
+        console.log(chalk.yellow('Please open the App Store app and sign in, then press Enter to continue.'));
+        
+        await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'continueAfterLogin',
+            message: 'Have you signed into the Mac App Store?',
+            default: false
+          }
+        ]);
+        
+        // Verify login after user confirmation
+        const verifyLogin = await checkAppStoreLogin();
+        if (!verifyLogin) {
+          throw new Error('Still not signed into the Mac App Store. Please sign in and try again.');
+        }
       }
     }
   },
@@ -633,8 +666,10 @@ async function installApp(app, isDryRun = false) {
     if (!isDryRun) {
       await checkMasRequirement(app, isDryRun);
       await app.install();
+      spinner.succeed(`${app.name} was installed successfully`);
+    } else {
+      spinner.succeed(`[DRY RUN] ${app.name} would be installed successfully`);
     }
-    spinner.succeed(`${isDryRun ? '[DRY RUN] ' : ''}${app.name} would be installed successfully`);
     return true;
   } catch (error) {
     spinner.fail(`${isDryRun ? '[DRY RUN] ' : ''}Failed to install ${app.name}`);
@@ -741,6 +776,45 @@ async function main() {
       ]
     }
   ]);
+
+  // Check App Store login if any selected apps require it
+  const hasAppStoreApps = selectedApps.some(appKey => 
+    apps[appKey].install.toString().includes('mas install')
+  );
+
+  if (hasAppStoreApps && !dryRun) {
+    const isLoggedIn = await checkAppStoreLogin();
+    if (!isLoggedIn) {
+      console.log(chalk.yellow('\nSome selected apps require Mac App Store login.'));
+      console.log(chalk.yellow('Please open the App Store app and sign in, then press Enter to continue.'));
+      
+      const { proceed } = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'proceed',
+          message: 'Have you signed into the Mac App Store?',
+          default: false
+        }
+      ]);
+
+      if (!proceed) {
+        console.log(chalk.yellow('Cannot proceed with App Store installations without login. Skipping those apps...'));
+        // Filter out App Store apps from selection
+        selectedApps = selectedApps.filter(appKey => 
+          !apps[appKey].install.toString().includes('mas install')
+        );
+      } else {
+        // Verify login after user confirmation
+        const verifyLogin = await checkAppStoreLogin();
+        if (!verifyLogin) {
+          console.log(chalk.red('Still not signed into the Mac App Store. App Store installations will be skipped.'));
+          selectedApps = selectedApps.filter(appKey => 
+            !apps[appKey].install.toString().includes('mas install')
+          );
+        }
+      }
+    }
+  }
 
   // Install selected apps
   const results = {
