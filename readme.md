@@ -6,7 +6,7 @@ A command-line tool to automate Mac development environment setup.
 
 ```bash
 # Install and run
-curl -fsSL https://raw.githubusercontent.com/yourusername/mac-setup-cli/main/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/brianoneil/macsetup/main/bootstrap.sh | bash
 mac-setup
 
 # Or just see what's installed/missing
@@ -17,7 +17,7 @@ mac-setup --report
 
 1. Run the bootstrap script:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yourusername/mac-setup-cli/main/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/brianoneil/macsetup/main/bootstrap.sh | bash
 ```
 
 2. Start a new terminal session for all changes to take effect.
@@ -85,8 +85,8 @@ Simulates the installation process without making any changes.
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/mac-setup-cli.git
-cd mac-setup-cli
+git clone https://github.com/brianoneil/macsetup.git
+cd macsetup
 
 # Install dependencies
 npm install
