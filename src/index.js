@@ -379,7 +379,7 @@ const apps = {
       
       console.log('\nRestore the SSH keys:');
       console.log(chalk.green('cd ~/.ssh'));
-      console.log(chalk.green('base64 -d ~/ssh_restore.txt | tar xzf -'));
+      console.log(chalk.green('base64 -D ~/ssh_restore.txt | tar xzf -'));
       
       console.log('\nSet proper permissions:');
       console.log(chalk.green('chmod 600 ~/.ssh/id_*'));
@@ -401,11 +401,22 @@ const apps = {
         try {
           // Create .ssh directory if it doesn't exist
           await execa('mkdir', ['-p', `${process.env.HOME}/.ssh`]);
+          await execa('chmod', ['700', `${process.env.HOME}/.ssh`]);
+
+          // Try to restore the keys
+          try {
+            await execa('bash', ['-c', `cd ${process.env.HOME}/.ssh && base64 -D ${process.env.HOME}/ssh_restore.txt | tar xzf -`]);
+          } catch (error) {
+            console.error(chalk.yellow('\nFailed to automatically restore keys. Please follow the manual steps above.'));
+            throw error;
+          }
           
           // Set proper permissions
-          await execa('chmod', ['700', `${process.env.HOME}/.ssh`]);
           await execa('chmod', ['600', `${process.env.HOME}/.ssh/id_*`]);
           await execa('chmod', ['644', `${process.env.HOME}/.ssh/*.pub`]);
+
+          // Clean up
+          await execa('rm', [`${process.env.HOME}/ssh_restore.txt`]);
 
           // Verify keys are properly installed
           const hasKeys = await apps.sshKeys.check();
