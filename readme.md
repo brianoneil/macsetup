@@ -11,6 +11,10 @@ mac-setup
 
 # Or just see what's installed/missing
 mac-setup --report
+
+# To uninstall mac-setup
+npm unlink mac-setup
+rm -rf ~/macsetup
 ```
 
 ## Installation
@@ -53,6 +57,18 @@ mac-setup --dry-run
 mac-setup -d
 ```
 Simulates the installation process without making any changes.
+
+### Uninstall
+```bash
+# Uninstall using the CLI
+mac-setup --uninstall
+# or
+mac-setup -u
+
+# Or manually
+npm unlink mac-setup
+rm -rf ~/macsetup
+```
 
 ## What Gets Installed
 
@@ -97,3 +113,17 @@ npm run dev
 # Run report in development
 npm run report
 ```
+
+## Uninstallation
+
+To remove mac-setup from your system:
+
+```bash
+# Unlink the CLI tool
+npm unlink mac-setup
+
+# Remove the repository
+rm -rf ~/macsetup
+```
+
+Note: This only removes the mac-setup tool itself. Any applications or configurations installed using mac-setup will remain on your system.

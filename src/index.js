@@ -19,6 +19,12 @@ const { values } = parseArgs({
       short: 'd',
       default: false,
       description: 'Run in dry-run mode (no actual installations)'
+    },
+    uninstall: {
+      type: 'boolean',
+      short: 'u',
+      default: false,
+      description: 'Uninstall mac-setup'
     }
   },
   allowPositionals: false
@@ -26,6 +32,7 @@ const { values } = parseArgs({
 
 const report = values.report;
 const dryRun = values['dry-run'];
+const uninstall = values.uninstall;
 
 const CATEGORIES = {
   DEVELOPMENT: 'Development Tools',
@@ -686,7 +693,50 @@ async function getAppInstallationStatus() {
   return status;
 }
 
+async function uninstallMacSetup() {
+  console.log(boxen(
+    chalk.bold.red('Uninstalling Mac Setup CLI'),
+    { padding: 1, margin: 1, borderStyle: 'double' }
+  ));
+
+  const spinner = ora('Uninstalling mac-setup...').start();
+  
+  try {
+    // Unlink the CLI tool
+    await execa('npm', ['unlink', 'mac-setup']);
+    
+    // Remove the repository
+    await execa('rm', ['-rf', `${process.env.HOME}/macsetup`]);
+    
+    spinner.succeed(chalk.green('Mac Setup CLI has been successfully uninstalled'));
+    console.log(chalk.yellow('\nNote: Applications and configurations installed using mac-setup remain on your system.'));
+  } catch (error) {
+    spinner.fail(chalk.red('Failed to uninstall Mac Setup CLI'));
+    console.error(error.message);
+    process.exit(1);
+  }
+}
+
 async function main() {
+  if (uninstall) {
+    const { confirmUninstall } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'confirmUninstall',
+        message: 'Are you sure you want to uninstall Mac Setup CLI?',
+        default: false
+      }
+    ]);
+
+    if (confirmUninstall) {
+      await uninstallMacSetup();
+      return;
+    } else {
+      console.log(chalk.yellow('Uninstall cancelled'));
+      return;
+    }
+  }
+
   if (report) {
     await generateReport();
     return;
