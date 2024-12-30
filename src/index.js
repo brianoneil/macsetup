@@ -361,24 +361,32 @@ const apps = {
     },
     install: async () => {
       console.log(chalk.yellow('\nSecure SSH Key Transfer Instructions:'));
-      console.log(chalk.bold('\nOn your source machine:'));
-      console.log('1. Package your SSH keys:');
-      console.log(chalk.green('   tar czf - ~/.ssh | base64 > ssh_backup.txt'));
       
-      console.log(chalk.bold('\nOn this machine:'));
-      console.log('2. Create a file and paste the contents:');
-      console.log(chalk.green('   nano ~/ssh_restore.txt'));
+      console.log(chalk.bold('\nStep 1: On your source machine'));
+      console.log('Package and encode your SSH keys:');
+      console.log(chalk.green('cd ~/.ssh'));
+      console.log(chalk.green('tar czf - * | base64 > ~/ssh_backup.txt'));
+      console.log('\nCopy the contents of ~/ssh_backup.txt');
       
-      console.log('\n3. Restore the SSH keys:');
-      console.log(chalk.green('   base64 -d ~/ssh_restore.txt | tar xzf - -C ~'));
+      console.log(chalk.bold('\nStep 2: On this machine'));
+      console.log('Create the SSH directory:');
+      console.log(chalk.green('mkdir -p ~/.ssh'));
+      console.log(chalk.green('chmod 700 ~/.ssh'));
       
-      console.log('\n4. Set proper permissions:');
-      console.log(chalk.green('   chmod 700 ~/.ssh'));
-      console.log(chalk.green('   chmod 600 ~/.ssh/id_*'));
-      console.log(chalk.green('   chmod 644 ~/.ssh/*.pub'));
+      console.log('\nCreate and paste into the restore file:');
+      console.log(chalk.green('nano ~/ssh_restore.txt'));
+      console.log('(Paste the contents and save with Ctrl+O, Ctrl+X)');
       
-      console.log('\n5. Clean up:');
-      console.log(chalk.green('   rm ~/ssh_restore.txt'));
+      console.log('\nRestore the SSH keys:');
+      console.log(chalk.green('cd ~/.ssh'));
+      console.log(chalk.green('base64 -d ~/ssh_restore.txt | tar xzf -'));
+      
+      console.log('\nSet proper permissions:');
+      console.log(chalk.green('chmod 600 ~/.ssh/id_*'));
+      console.log(chalk.green('chmod 644 ~/.ssh/*.pub'));
+      
+      console.log('\nClean up:');
+      console.log(chalk.green('rm ~/ssh_restore.txt'));
 
       const { proceed } = await inquirer.prompt([
         {
@@ -390,15 +398,23 @@ const apps = {
       ]);
 
       if (proceed) {
-        // Verify permissions
-        await execa('chmod', ['700', `${process.env.HOME}/.ssh`]);
-        await execa('chmod', ['600', `${process.env.HOME}/.ssh/id_*`]);
-        await execa('chmod', ['644', `${process.env.HOME}/.ssh/*.pub`]);
+        try {
+          // Create .ssh directory if it doesn't exist
+          await execa('mkdir', ['-p', `${process.env.HOME}/.ssh`]);
+          
+          // Set proper permissions
+          await execa('chmod', ['700', `${process.env.HOME}/.ssh`]);
+          await execa('chmod', ['600', `${process.env.HOME}/.ssh/id_*`]);
+          await execa('chmod', ['644', `${process.env.HOME}/.ssh/*.pub`]);
 
-        // Verify keys are properly installed
-        const hasKeys = await apps.sshKeys.check();
-        if (!hasKeys) {
-          throw new Error('SSH keys were not properly installed. Please try again.');
+          // Verify keys are properly installed
+          const hasKeys = await apps.sshKeys.check();
+          if (!hasKeys) {
+            throw new Error('SSH keys were not properly installed. Please try again.');
+          }
+        } catch (error) {
+          console.error(chalk.red('Error setting up SSH keys:'), error.message);
+          throw error;
         }
       }
     }
