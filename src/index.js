@@ -372,14 +372,14 @@ const apps = {
       console.log('Create the SSH directory:');
       console.log(chalk.green('mkdir -p ~/.ssh'));
       console.log(chalk.green('chmod 700 ~/.ssh'));
+      console.log(chalk.green('cd ~/.ssh'));
       
       console.log('\nCreate and paste into the restore file:');
       console.log(chalk.green('nano ~/ssh_restore.txt'));
       console.log('(Paste the contents and save with Ctrl+O, Ctrl+X)');
       
       console.log('\nRestore the SSH keys:');
-      console.log(chalk.green('cd ~/.ssh'));
-      console.log(chalk.green('base64 -D ~/ssh_restore.txt | tar xzf -'));
+      console.log(chalk.green(`base64 -D -i ~/ssh_restore.txt | tar xzf - -C ~/.ssh`));
       
       console.log('\nSet proper permissions:');
       console.log(chalk.green('chmod 600 ~/.ssh/id_*'));
@@ -405,7 +405,7 @@ const apps = {
 
           // Try to restore the keys
           try {
-            await execa('bash', ['-c', `cd ${process.env.HOME}/.ssh && base64 -D ${process.env.HOME}/ssh_restore.txt | tar xzf -`]);
+            await execa('bash', ['-c', `cd ${process.env.HOME}/.ssh && base64 -D -i ${process.env.HOME}/ssh_restore.txt | tar xzf - -C ${process.env.HOME}/.ssh`]);
           } catch (error) {
             console.error(chalk.yellow('\nFailed to automatically restore keys. Please follow the manual steps above.'));
             throw error;
