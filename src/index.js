@@ -365,7 +365,7 @@ const apps = {
       console.log(chalk.bold('\nStep 1: On your source machine'));
       console.log('Package and encode your SSH keys:');
       console.log(chalk.green('cd ~/.ssh'));
-      console.log(chalk.green('tar czf - * | base64 > ~/ssh_backup.txt'));
+      console.log(chalk.green('tar -C ~/.ssh -czf - . | base64 > ~/ssh_backup.txt'));
       console.log('\nCopy the contents of ~/ssh_backup.txt');
       
       console.log(chalk.bold('\nStep 2: On this machine'));
@@ -379,7 +379,7 @@ const apps = {
       console.log('(Paste the contents and save with Ctrl+O, Ctrl+X)');
       
       console.log('\nRestore the SSH keys:');
-      console.log(chalk.green(`base64 -D -i ~/ssh_restore.txt | tar xzf - -C ~/.ssh`));
+      console.log(chalk.green(`base64 -D -i ~/ssh_restore.txt | tar xzf - -C ./`));
       
       console.log('\nSet proper permissions:');
       console.log(chalk.green('chmod 600 ~/.ssh/id_*'));
@@ -405,7 +405,7 @@ const apps = {
 
           // Try to restore the keys
           try {
-            await execa('bash', ['-c', `cd ${process.env.HOME}/.ssh && base64 -D -i ${process.env.HOME}/ssh_restore.txt | tar xzf - -C ${process.env.HOME}/.ssh`]);
+            await execa('bash', ['-c', `cd ${process.env.HOME}/.ssh && base64 -D -i ${process.env.HOME}/ssh_restore.txt | tar xzf - -C ./`]);
           } catch (error) {
             console.error(chalk.yellow('\nFailed to automatically restore keys. Please follow the manual steps above.'));
             throw error;
